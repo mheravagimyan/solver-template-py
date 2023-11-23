@@ -154,6 +154,24 @@ class BatchAuction:
 
     def solve(self) -> None:
         """Solve Batch"""
+        orders = self.orders
+        for i in range(len(orders) - 1):
+            for j in range(i + 1, len(orders)):
+                order_i, order_j = order[i], order[j]
+                if order_i.match_type(order_j) == OrderMatchType.BOTH_FILLED:
+                    order_i.excute(
+                        buy_amount_value = order_j.sell_amount,
+                        sell_amount_value = order_j.buy_amount,
+                    )
+                    order_j.excute(
+                        buy_amount_value = order_i.sell_amount,
+                        sell_amount_value = order_i.buy_amount,
+                    )   
+                    token_a = self.token_info(order_i.sell_token)                 
+                    token_b = self.token_info(order_i.buy_token) 
+                    self.prices[token_a.token] = order_j.sell_amount
+                    self.prices[token_b.token] = order_j.sell_amount 
+                    return          
 
     #################################
     #  SOLUTION PROCESSING METHODS  #

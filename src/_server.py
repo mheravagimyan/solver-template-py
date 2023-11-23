@@ -10,7 +10,6 @@ import logging
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseSettings
 
 from src.models.batch_auction import BatchAuction
@@ -36,7 +35,7 @@ SERVER_ARGS = None
 class ServerSettings(BaseSettings):
     """Basic Server Settings"""
 
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8000
 
 
@@ -46,19 +45,11 @@ server_settings = ServerSettings()
 
 
 app = FastAPI(title="Batch auction solver")
-app.add_middleware(GZipMiddleware)
 
 
 @app.get("/health", status_code=200)
 def health() -> bool:
     """Convenience endpoint to check if server is alive."""
-    return True
-
-
-@app.post("/notify", response_model=bool)
-async def notify(request: Request) -> bool:
-    """Print response from notify endpoint."""
-    print(f"Notify request {await request.json()}")
     return True
 
 
@@ -74,20 +65,15 @@ async def solve(problem: BatchAuctionModel, request: Request):  # type: ignore
     print("Parameters Supplied", solver_args)
 
     # 1. Solve BatchAuction: update batch_auction with
-    # batch.solve()
+    batch.solve()
 
-    trivial_solution = {
-        "orders": {},
-        "foreign_liquidity_orders": [],
+    sample_output = {
+        "ref_token": batch.ref_token.value,
+        "orders": {order.order_id: order.as_dict() for order in batch.orders if order.is_executed()},
+        "prices": {str(key): decimal_to_str(value) for key, value in batch.prices.item()},
         "amms": {},
-        "prices": {},
-        "approvals": [],
-        "interaction_data": [],
-        "score": "0",
     }
-
-    print("\n\n*************\n\nReturning solution: " + str(trivial_solution))
-    return trivial_solution
+    return sample_output
 
 
 # ++++ Server setup: ++++
